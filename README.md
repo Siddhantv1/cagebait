@@ -5,8 +5,8 @@ An AI-powered scam detection and engagement API that detects scam messages, chat
 ## Tech Stack
 
 - **Express.js** - REST API framework
-- **Google Gemini** - LLM for scam detection & agent responses
-- **Redis** - Session/conversation storage
+- **React.js** - Frontend (demo purposes only)
+- **Google Gemini** - Gemini 3 Flash for scam detection & agent responses
 
 ## Quick Start
 
@@ -23,8 +23,6 @@ Edit `.env` file with your keys:
 ```env
 API_KEY=your-secret-api-key-here
 GOOGLE_API_KEY=your-gemini-api-key-here
-REDIS_HOST=localhost
-REDIS_PORT=6379
 PORT=8000
 ```
 
@@ -127,4 +125,4 @@ honeypot-api/
 
 ## Deployment
 
-Deploy to Railway, Render, or Vercel to get a public URL for testing.
+About to deploy to Railway, Render, or Vercel to get a public URL for testing.
