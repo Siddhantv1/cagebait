@@ -26,13 +26,7 @@ GOOGLE_API_KEY=your-gemini-api-key-here
 PORT=8000
 ```
 
-### 3. Start Redis
-
-```bash
-redis-server
-```
-
-### 4. Run the API
+### 3. Run the API
 
 ```bash
 # Development (with hot reload)
