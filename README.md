@@ -1,5 +1,19 @@
 # CAGEBAIT: Honeypot API Endpoint to trap Scammers
 
+```
+  /$$$$$$   /$$$$$$   /$$$$$$  /$$$$$$$$ /$$$$$$$   /$$$$$$  /$$$$$$ /$$$$$$$$
+ /$$__  $$ /$$__  $$ /$$__  $$| $$_____/| $$__  $$ /$$__  $$|_  $$_/|__  $$__/
+| $$  \__/| $$  \ $$| $$  \__/| $$      | $$  \ $$| $$  \ $$  | $$     | $$   
+| $$      | $$$$$$$$| $$ /$$$$| $$$$$   | $$$$$$$ | $$$$$$$$  | $$     | $$   
+| $$      | $$__  $$| $$|_  $$| $$__/   | $$__  $$| $$__  $$  | $$     | $$   
+| $$    $$| $$  | $$| $$  \ $$| $$      | $$  \ $$| $$  | $$  | $$     | $$   
+|  $$$$$$/| $$  | $$|  $$$$$$/| $$$$$$$$| $$$$$$$/| $$  | $$ /$$$$$$   | $$   
+ \______/ |__/  |__/ \______/ |________/|_______/ |__/  |__/|______/   |__/   
+                                                                              
+```                                                                           
+                                                                              
+
+
 An AI-powered scam detection and engagement API that detects scam messages, chats with scammers using AI personas, extracts intelligence (bank accounts, UPI IDs, phone numbers, links), and reports back to GUVI.
 
 ## Tech Stack
