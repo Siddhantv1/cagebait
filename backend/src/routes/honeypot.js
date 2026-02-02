@@ -25,12 +25,30 @@ const validateApiKey = (req, res, next) => {
 
 router.post('/honeypot', validateApiKey, async (req, res) => {
     try {
-        const { sessionId, message, conversationHistory } = req.body;
+        const { sessionId, message, conversationHistory, metadata } = req.body;
 
         // 1. Get or create session
         let session = await sessionManager.getSession(sessionId);
         if (!session) {
             session = await sessionManager.createSession(sessionId);
+            // If new session but history provided (e.g. server restart), restore it
+            if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+                console.log(`Restoring history for session ${sessionId} from request`);
+                session.conversationHistory = conversationHistory;
+                // Set message count based on history
+                session.messageCount = conversationHistory.length;
+            }
+        } else {
+            // Sync history if provided (client as source of truth for history)
+            if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > session.conversationHistory.length) {
+                session.conversationHistory = conversationHistory;
+                session.messageCount = conversationHistory.length;
+            }
+        }
+
+        // Store metadata if provided
+        if (metadata) {
+            session.metadata = { ...session.metadata, ...metadata };
         }
 
         // 2. Increment message count
@@ -52,7 +70,8 @@ router.post('/honeypot', validateApiKey, async (req, res) => {
                         scamType: detection.scamType,
                         reasoning: detection.reasoning,
                         keywordMatches: detection.keywordMatches,
-                        keywordScore: detection.keywordScore
+                        keywordScore: detection.keywordScore,
+                        matchCount: detection.matchCount
                     }
                 });
             }
@@ -73,11 +92,12 @@ router.post('/honeypot', validateApiKey, async (req, res) => {
         }
 
         // 5. Add scammer message to history
-        session.conversationHistory.push({
+        const scammerMsgObj = {
             sender: message.sender,
             text: message.text,
             timestamp: message.timestamp || new Date().toISOString()
-        });
+        };
+        session.conversationHistory.push(scammerMsgObj);
 
         // 6. Check if should end
         const endCheck = sessionManager.shouldEnd(session);
@@ -106,7 +126,7 @@ router.post('/honeypot', validateApiKey, async (req, res) => {
         // 7. Generate agent response
         const agentResponse = await agent.generateResponse(
             message.text,
-            conversationHistory,
+            session.conversationHistory, // Use session history (now synced)
             session.persona,
             session.messageCount
         );
@@ -132,7 +152,8 @@ router.post('/honeypot', validateApiKey, async (req, res) => {
                 confidence: session.detection.confidence,
                 scamType: session.detection.scamType,
                 reasoning: session.detection.reasoning,
-                keywordMatches: session.detection.keywordMatches
+                keywordMatches: session.detection.keywordMatches,
+                matchCount: session.detection.matchCount
             } : null
         });
 
@@ -142,18 +163,82 @@ router.post('/honeypot', validateApiKey, async (req, res) => {
     }
 });
 
-async function sendFinalCallback(sessionId, session, reason) {
+import fs from 'fs';
+import path from 'path';
+
+// ... existing imports ...
+
+// Helper to generate payload in o.md format
+const generateFinalPayload = (sessionId, session, reason) => {
+    return {
+        status: "success",
+        scamDetected: true,
+        engagementMetrics: {
+            engagementDurationSeconds: Math.floor((new Date() - new Date(session.createdAt)) / 1000),
+            totalMessagesExchanged: session.messageCount
+        },
+        extractedIntelligence: session.intelligence,
+        agentNotes: `${session.scamType} scam detected. ${reason}`
+    };
+};
+
+// ... existing middleware ...
+
+router.post('/end-session', validateApiKey, async (req, res) => {
     try {
-        await axios.post(config.guviCallbackUrl, {
-            sessionId,
-            scamDetected: true,
-            totalMessagesExchanged: session.messageCount,
-            extractedIntelligence: session.intelligence,
-            agentNotes: `${session.scamType} scam detected. ${reason}`
-        }, {
-            timeout: 5000
-        });
-        console.log(`Final callback sent for session ${sessionId}`);
+        const { sessionId, reason } = req.body;
+        const session = await sessionManager.getSession(sessionId);
+
+        if (!session) {
+            // 404 is technically correct, but let's provide a helpful message
+            return res.status(404).json({ error: 'Session not found. Note: Sessions are in-memory and clear on restart.' });
+        }
+
+        if (!session.finalCallbackSent) {
+            await sendFinalCallback(sessionId, session, reason || 'User ended session manually');
+            session.finalCallbackSent = true;
+            await sessionManager.saveSession(sessionId, session);
+        }
+
+        // Return final summary
+        const payload = generateFinalPayload(sessionId, session, reason || 'User ended session manually');
+        res.json(payload);
+
+    } catch (error) {
+        console.error('End session error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ... existing /honeypot route ...
+// (Note: ensure /honeypot also uses generateFinalPayload if needed, or just sendFinalCallback)
+
+async function sendFinalCallback(sessionId, session, reason) {
+    const payload = generateFinalPayload(sessionId, session, reason);
+
+    // 1. Log to console
+    console.log('--- FINAL SESSION PAYLOAD (Session ID: ' + sessionId + ') ---');
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('-----------------------------');
+
+    // 2. Save to separate JSON file per session
+    try {
+        const sessionsDir = path.join(process.cwd(), 'sessions');
+        if (!fs.existsSync(sessionsDir)) {
+            fs.mkdirSync(sessionsDir, { recursive: true });
+        }
+
+        const filePath = path.join(sessionsDir, `${sessionId}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+        console.log(`Payload saved to sessions/${sessionId}.json`);
+    } catch (err) {
+        console.error('Failed to save payload locally:', err);
+    }
+
+    // 3. Send to GUVI
+    try {
+        await axios.post(config.guviCallbackUrl, payload, { timeout: 5000 });
+        console.log(`Final callback sent to GUVI for session ${sessionId}`);
     } catch (error) {
         console.error('Callback failed:', error.message);
     }
