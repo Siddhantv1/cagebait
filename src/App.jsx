@@ -58,6 +58,37 @@ function App() {
         }
     }
 
+    const endSession = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const res = await fetch('http://localhost:8000/api/end-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey
+                },
+                body: JSON.stringify({
+                    sessionId,
+                    reason: "User manually ended session"
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Failed to end session')
+
+            setResponse(data)
+            // Add a visual indicator in history
+            setHistory(prev => [...prev, {
+                sender: 'system',
+                text: '🔴 Session Ended. Final Report generated.'
+            }])
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const resetSession = () => {
         setSessionId('test-session-' + Date.now())
         setHistory([])
@@ -68,7 +99,7 @@ function App() {
 
     return (
         <div className="container">
-            <h1>🍯 Honeypot API Tester</h1>
+            <h1>🐒 CAGEBAIT</h1>
 
             <div className="panel">
                 <h2>Configuration</h2>
@@ -107,6 +138,9 @@ function App() {
                 <div className="row">
                     <button onClick={sendMessage} disabled={loading || !message.trim()}>
                         {loading ? 'Sending...' : '📤 Send Message'}
+                    </button>
+                    <button onClick={endSession} style={{ background: '#d32f2f', color: '#fff' }} disabled={loading}>
+                        🛑 End Session
                     </button>
                     <button onClick={resetSession} style={{ background: '#333', color: '#fff' }}>
                         🔄 Reset Session
