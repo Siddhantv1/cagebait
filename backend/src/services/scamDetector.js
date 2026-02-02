@@ -10,7 +10,7 @@ class ScamDetector {
         this.singleWordKeywords = new Set();
         this.multiWordKeywords = new Set();
 
-        // Your existing keywords array
+        // Scam words Corpus
         const allKeywords = [
             "urgent", "immediately", "asap", "act now", "final notice", "last chance", "limited time",
             "time-sensitive", "expires today", "within 24 hours", "respond now",
