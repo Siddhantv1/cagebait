@@ -1,54 +1,14 @@
-import { createClient } from 'redis';
-import config from '../config.js';
-
 class SessionManager {
     constructor() {
-        this.useRedis = false;
-        this.memoryStore = new Map(); // Fallback in-memory storage
-
-        this.client = createClient({
-            socket: {
-                host: config.redisHost,
-                port: config.redisPort
-            }
-        });
-
-        this.client.on('error', err => {
-            if (this.useRedis) {
-                console.error('Redis error:', err);
-            }
-        });
-
-        // Try to connect to Redis
-        this.initRedis();
-    }
-
-    async initRedis() {
-        try {
-            await this.client.connect();
-            this.useRedis = true;
-            console.log('✅ Connected to Redis');
-        } catch (error) {
-            this.useRedis = false;
-            console.log('⚠️ Redis not available, using in-memory storage (data will not persist across restarts)');
-        }
+        this.memoryStore = new Map();
+        console.log('Session Manager initialized (In-Memory Only)');
     }
 
     async getSession(sessionId) {
-        try {
-            if (this.useRedis) {
-                const data = await this.client.get(`session:${sessionId}`);
-                return data ? JSON.parse(data) : null;
-            } else {
-                // In-memory fallback
-                const session = this.memoryStore.get(sessionId);
-                return session || null;
-            }
-        } catch (error) {
-            console.error('Get session error:', error);
-            // Try memory fallback on Redis error
-            return this.memoryStore.get(sessionId) || null;
+        if (this.memoryStore.has(sessionId)) {
+            return this.memoryStore.get(sessionId);
         }
+        return null;
     }
 
     async createSession(sessionId) {
