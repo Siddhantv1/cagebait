@@ -3,7 +3,7 @@ import config from '../config.js';
 class Agent {
     constructor() {
         this.apiKey = config.googleApiKey;
-        this.modelName = "gemini-3-flash-preview";
+        this.modelName = "gemini-2.5-flash";
         this.baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent`;
 
         this.personas = {
@@ -63,26 +63,27 @@ class Agent {
         };
 
         const historyText = conversationHistory
-            .slice(-5)
-            .map(msg => `${msg.sender}: ${msg.text}`)
+            .slice(-6)
+            .map(msg => `${msg.sender === 'scammer' ? 'Scammer' : 'You'}: ${msg.text}`)
             .join('\n');
 
         const prompt = `You are roleplaying as a ${personaInfo.description}.
-${personaInfo.traits}
+Traits: ${personaInfo.traits}
 
 Conversation so far:
 ${historyText}
 
 Scammer just said: "${scammerMessage}"
 
-Current goal: ${phaseInstructions[phase]}
+CURRENT GOAL: ${phaseInstructions[phase]}
 
-IMPORTANT: 
-- Respond naturally in 1-2 sentences
-- Stay in character
-- Try to get them to share bank account, UPI ID, or phone number
-- NEVER reveal you know it's a scam
-- Do NOT output any markdown, just the plain text response
+CRITICAL RULES:
+1. Respond in EXACTLY 1-2 SHORT sentences (max 20 words)
+2. Stay in character - ${personaInfo.description}
+3. NEVER reveal you know this is a scam
+4. NEVER ask the same question twice
+5. Be natural and conversational
+6. Show appropriate emotion (concern, confusion, etc.)
 
 Your response:`;
 
