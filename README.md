@@ -133,4 +133,4 @@ honeypot-api/
 
 ## Deployment
 
-About to deploy to Railway, Render, or Vercel to get a public URL for testing.
+Deployed on [Render](https://cagebait.onrender.com/api/honeypot) (Primary URL, for API Endpoint testing only)
