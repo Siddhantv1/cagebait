@@ -130,7 +130,3 @@ honeypot-api/
 ├── package.json
 └── README.md
 ```
-
-## Deployment
-
-Deployed on [Render](https://cagebait.onrender.com/api/honeypot) (Primary URL, for API Endpoint testing only)
