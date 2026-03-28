@@ -13,17 +13,7 @@ const scamDetector = new ScamDetector();
 const agent = new Agent();
 const intelligenceExtractor = new IntelligenceExtractor();
 const sessionManager = new SessionManager();
-
-// API key middleware
-const validateApiKey = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== config.apiKey) {
-        return res.status(401).json({ error: 'Invalid API key' });
-    }
-    next();
-};
-
-router.post('/honeypot', validateApiKey, async (req, res) => {
+router.post('/honeypot', async (req, res) => {
     try {
         const { sessionId, message, conversationHistory, metadata } = req.body;
 
@@ -184,7 +174,7 @@ const generateFinalPayload = (sessionId, session, reason) => {
 
 // ... existing middleware ...
 
-router.post('/end-session', validateApiKey, async (req, res) => {
+router.post('/end-session', async (req, res) => {
     try {
         const { sessionId, reason } = req.body;
         const session = await sessionManager.getSession(sessionId);
