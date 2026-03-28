@@ -88,7 +88,7 @@ CAGEBAIT/
 - **npm** ≥ 9.x
 - A **Google AI Studio** API key ([Get one here](https://aistudio.google.com/apikey))
 - A **Murf AI** API key ([Sign up here](https://murf.ai))
-- A Chromium-based browser (Chrome or Edge) for Web Speech API support
+- A Chromium-based browser (Chrome, Safari or Edge) for Web Speech API support
 
 ### 1. Clone the Repository
 
