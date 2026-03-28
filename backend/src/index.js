@@ -1,6 +1,7 @@
 import express from 'express';
 import config from './config.js';
 import honeypotRouter from './routes/honeypot.js';
+import voiceRouter from './routes/voice.js';
 
 const app = express();
 
@@ -16,7 +17,7 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 //middleware for debug logger
 app.use((req, res, next) => {
@@ -39,6 +40,7 @@ app.use((err, req, res, next) => {
 
 // Routes
 app.use('/api', honeypotRouter);
+app.use('/api', voiceRouter);
 
 // Health check
 app.get('/health', (req, res) => {
