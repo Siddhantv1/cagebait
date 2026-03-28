@@ -1,79 +1,74 @@
-import { parsePhoneNumber } from 'libphonenumber-js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import config from '../config.js';
 
 class IntelligenceExtractor {
     constructor() {
-        this.patterns = {
-            bankAccounts: /\b\d{9,18}\b/g,
-            upiIds: /[\w\.-]+@[\w\.-]+/g,
-            urls: /http[s]?:\/\/[^\s]+/g,
-            phoneNumbers: /\+?91[-\s]?[6-9]\d{9}\b/g
-        };
-
-        this.scamKeywords = [
-            'urgent', 'immediately', 'blocked', 'suspended',
-            'verify', 'confirm', 'update', 'kyc', 'otp', 'cvv'
-        ];
+        const genAI = new GoogleGenerativeAI(config.googleApiKey);
+        this.model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" }, { apiVersion: 'v1beta' });
     }
 
-    extract(message) {
-        const intelligence = {
+    async extract(conversationMsgs) {
+        if (!conversationMsgs || conversationMsgs.length === 0) {
+            return this.getEmptyIntelligence();
+        }
+
+        const convoText = conversationMsgs
+            .map(msg => `${msg.sender}: ${msg.text}`)
+            .join('\n');
+
+        const prompt = `You are a cybersecurity intelligence extractor.
+Analyze this entire honeypot conversation. Extract any explicit personal or financial identifiers provided by the "scammer", even if spoken conversationally (e.g., "my account is four four three...").
+
+Return ONLY a valid JSON object matching exactly this schema:
+{
+  "bankAccounts": ["account number strings"],
+  "upiIds": ["upi id strings"],
+  "phishingLinks": ["urls"],
+  "phoneNumbers": ["phone numbers"],
+  "suspiciousKeywords": ["crypto", "transfer", "fine", "penalty", etc],
+  "scammerInfo": ["names", "companies", "employee IDs", "locations"]
+}
+
+Conversation:
+${convoText}`;
+
+        try {
+            const result = await this.model.generateContent(prompt);
+            const text = result.response.text();
+            // Parse JSON (remove markdown bounds safely)
+            const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+            const parsed = JSON.parse(cleanText);
+
+            // Normalize against empty schema boundaries
+            return this.merge(this.getEmptyIntelligence(), parsed);
+        } catch (error) {
+            console.error('Intelligence Gemini extraction failed:', error);
+            return this.getEmptyIntelligence();
+        }
+    }
+
+    getEmptyIntelligence() {
+        return {
             bankAccounts: [],
             upiIds: [],
             phishingLinks: [],
             phoneNumbers: [],
-            suspiciousKeywords: []
+            suspiciousKeywords: [],
+            scammerInfo: []
         };
-
-        // Extract bank accounts
-        const bankMatches = message.match(this.patterns.bankAccounts);
-        if (bankMatches) {
-            intelligence.bankAccounts = [...new Set(bankMatches)];
-        }
-
-        // Extract UPI IDs
-        const upiMatches = message.match(this.patterns.upiIds);
-        if (upiMatches) {
-            intelligence.upiIds = [...new Set(upiMatches.filter(m => m.includes('@')))];
-        }
-
-        // Extract URLs
-        const urlMatches = message.match(this.patterns.urls);
-        if (urlMatches) {
-            intelligence.phishingLinks = [...new Set(urlMatches)];
-        }
-
-        // Extract phone numbers
-        const phoneMatches = message.match(this.patterns.phoneNumbers);
-        if (phoneMatches) {
-            intelligence.phoneNumbers = [...new Set(phoneMatches.map(p => {
-                try {
-                    const parsed = parsePhoneNumber(p, 'IN');
-                    return parsed.format('E.164');
-                } catch {
-                    return p;
-                }
-            }))];
-        }
-
-        // Extract keywords
-        const lowerMsg = message.toLowerCase();
-        this.scamKeywords.forEach(keyword => {
-            if (lowerMsg.includes(keyword)) {
-                intelligence.suspiciousKeywords.push(keyword);
-            }
-        });
-        intelligence.suspiciousKeywords = [...new Set(intelligence.suspiciousKeywords)];
-
-        return intelligence;
     }
 
     merge(existing, newIntel) {
+        if (!existing) existing = this.getEmptyIntelligence();
+        if (!newIntel) newIntel = this.getEmptyIntelligence();
+
         return {
-            bankAccounts: [...new Set([...existing.bankAccounts, ...newIntel.bankAccounts])],
-            upiIds: [...new Set([...existing.upiIds, ...newIntel.upiIds])],
-            phishingLinks: [...new Set([...existing.phishingLinks, ...newIntel.phishingLinks])],
-            phoneNumbers: [...new Set([...existing.phoneNumbers, ...newIntel.phoneNumbers])],
-            suspiciousKeywords: [...new Set([...existing.suspiciousKeywords, ...newIntel.suspiciousKeywords])]
+            bankAccounts: [...new Set([...(existing.bankAccounts || []), ...(newIntel.bankAccounts || [])])],
+            upiIds: [...new Set([...(existing.upiIds || []), ...(newIntel.upiIds || [])])],
+            phishingLinks: [...new Set([...(existing.phishingLinks || []), ...(newIntel.phishingLinks || [])])],
+            phoneNumbers: [...new Set([...(existing.phoneNumbers || []), ...(newIntel.phoneNumbers || [])])],
+            suspiciousKeywords: [...new Set([...(existing.suspiciousKeywords || []), ...(newIntel.suspiciousKeywords || [])])],
+            scammerInfo: [...new Set([...(existing.scammerInfo || []), ...(newIntel.scammerInfo || [])])]
         };
     }
 }
