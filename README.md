@@ -32,7 +32,7 @@ CAGEBAIT traps phone/call scammers by deploying a convincing AI persona that tal
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
