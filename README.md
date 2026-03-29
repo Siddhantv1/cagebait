@@ -220,9 +220,6 @@ The primary endpoint used by the frontend dashboard.
 }
 ```
 
-### `POST /api/honeypot`
-
-Legacy text-only endpoint (no voice). Requires `x-api-key` header.
 
 ### `GET /health`
 
