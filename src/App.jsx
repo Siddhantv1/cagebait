@@ -281,11 +281,11 @@ const ScamHoneypot = () => {
         <div className="scanlines"></div>
 
         <div className="relative z-50 max-w-2xl text-center flex flex-col items-center">
-        <div className="flex items-center gap-3 flex-nowrap">
-          <h1 className="font-display text-6xl md:text-7xl lg:text-8xl tracking-tighter text-[#CCFF00] leading-none mb-5">
-            CAGEBAIT
-          </h1>
-          <img
+          <div className="flex items-center gap-3 flex-nowrap">
+            <h1 className="font-display text-6xl md:text-7xl lg:text-8xl tracking-tighter text-[#CCFF00] leading-none mb-5">
+              CAGEBAIT
+            </h1>
+            <img
               src="./imagebait.png" // put your image in /public
               alt="Cagebait logo"
               className="h-[3.5rem] md:h-[4.5rem] lg:h-[5.5rem] xl:h-[6.5rem] w-auto object-contain mb-5"
@@ -306,7 +306,7 @@ const ScamHoneypot = () => {
             onClick={handleStartSession}
             className="mt-8 px-6 py-3 bg-[#CCFF00] text-black font-display text-xl md:text-2xl lg:text-3xl hover:bg-white transition-colors box-content hard-shadow-acid cursor-pointer"
           >
-            🎤 ALLOW MIC & INITIATE
+            🎙ALLOW MIC & INITIATE🎙
           </button>
         </div>
       </div>
@@ -404,11 +404,11 @@ const ScamHoneypot = () => {
         {/* LEFT PANEL: Telemetry & Status */}
         <div className="lg:col-span-3 flex flex-col justify-between border-l-2 border-[#333] pl-4 py-2 min-h-0">
           <div className="flex flex-col min-h-0">
-          <div className="flex items-center gap-3 flex-nowrap">
-            <h1 className="font-display text-3xl lg:text-4xl xl:text-5xl tracking-tighter text-[#CCFF00] mb-2 leading-none">
-              CAGEBAIT
-            </h1>
-            {/* <img
+            <div className="flex items-center gap-3 flex-nowrap">
+              <h1 className="font-display text-3xl lg:text-4xl xl:text-5xl tracking-tighter text-[#CCFF00] mb-2 leading-none">
+                CAGEBAIT
+              </h1>
+              {/* <img
               src="./imagebait.png" // put your image in /public
               alt="Cagebait logo"
               className="h-11 w-auto object-contain lg:h-12 xl:h-14"
@@ -423,18 +423,18 @@ const ScamHoneypot = () => {
                 <div className="flex justify-between items-center mb-1">
                   <div className="text-[#666]">TARGET STATUS</div>
                   {sessionActive && (
-                      <button 
-                          onClick={() => {
-                              const st = !sessionPaused;
-                              setSessionPaused(st);
-                              sessionPausedRef.current = st;
-                              if (st) stopListening();
-                              else startListening();
-                          }}
-                          className={`text-[9px] px-1.5 py-0.5 border transition-colors cursor-pointer ${sessionPaused ? 'bg-[#FF3300] text-black border-[#FF3300] hover:bg-white hover:border-white' : 'border-[#444] text-[#444] hover:bg-[#222]'}`}
-                      >
-                          {sessionPaused ? 'RESUME SESSION' : 'PAUSE SESSION'}
-                      </button>
+                    <button
+                      onClick={() => {
+                        const st = !sessionPaused;
+                        setSessionPaused(st);
+                        sessionPausedRef.current = st;
+                        if (st) stopListening();
+                        else startListening();
+                      }}
+                      className={`text-[9px] px-1.5 py-0.5 border transition-colors cursor-pointer ${sessionPaused ? 'bg-[#FF3300] text-black border-[#FF3300] hover:bg-white hover:border-white' : 'border-[#444] text-[#444] hover:bg-[#222]'}`}
+                    >
+                      {sessionPaused ? 'RESUME SESSION' : 'PAUSE SESSION'}
+                    </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -455,17 +455,17 @@ const ScamHoneypot = () => {
               <div className="flex flex-col min-h-0 flex-1">
                 <div className="text-[#666] mb-1">CONVERSATION STREAM</div>
                 <div className="flex-1 overflow-y-auto border border-[#222] bg-[#0A0A0A] p-2 flex flex-col gap-2 font-mono chat-scroll text-xs mt-1 min-h-[80px] max-h-[220px]">
-                   {chatHistory.length === 0 && <span className="text-[#444] italic text-[10px]">Conversation will appear here</span>}
-                   {chatHistory.map((msg, idx) => (
-                       <div key={idx} className={`flex flex-col ${msg.sender === 'agent' ? 'items-end' : 'items-start'}`}>
-                           <span className={`text-[9px] mb-0.5 ${msg.sender === 'agent' ? 'text-[#CCFF00]' : 'text-[#FF3300]'}`}>
-                              {msg.sender === 'agent' ? 'AGENT' : 'TARGET'}
-                           </span>
-                           <div className={`p-1.5 border max-w-[90%] break-words ${msg.sender === 'agent' ? 'border-[#CCFF00]/30 text-white text-right' : 'border-[#FF3300]/30 text-gray-300'}`}>
-                               {msg.text}
-                           </div>
-                       </div>
-                   ))}
+                  {chatHistory.length === 0 && <span className="text-[#444] italic text-[10px]">Conversation will appear here</span>}
+                  {chatHistory.map((msg, idx) => (
+                    <div key={idx} className={`flex flex-col ${msg.sender === 'agent' ? 'items-end' : 'items-start'}`}>
+                      <span className={`text-[9px] mb-0.5 ${msg.sender === 'agent' ? 'text-[#CCFF00]' : 'text-[#FF3300]'}`}>
+                        {msg.sender === 'agent' ? 'AGENT' : 'TARGET'}
+                      </span>
+                      <div className={`p-1.5 border max-w-[90%] break-words ${msg.sender === 'agent' ? 'border-[#CCFF00]/30 text-white text-right' : 'border-[#FF3300]/30 text-gray-300'}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <form onSubmit={handleFallbackSubmit} className="mt-2 flex border border-[#333]">
