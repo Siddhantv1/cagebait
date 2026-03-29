@@ -18,7 +18,7 @@ const ScamHoneypot = () => {
   const timerRef = useRef(null);
   const retryCountRef = useRef(0);
   const isProcessingRef = useRef(false);
-  
+
   const sessionPausedRef = useRef(false);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -56,7 +56,7 @@ const ScamHoneypot = () => {
   const visualizeTargetAudio = () => {
     if (!analyserRef.current) return;
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    
+
     const draw = () => {
       // Terminate visualizer logically if mic is functionally off
       if (sessionPausedRef.current || isProcessingRef.current || (audioRef.current && !audioRef.current.paused)) {
@@ -65,15 +65,15 @@ const ScamHoneypot = () => {
         rects.forEach(rect => rect.style.transform = `scaleY(0.2)`);
         return;
       }
-      
+
       analyserRef.current.getByteFrequencyData(dataArray);
-      
+
       const rects = document.querySelectorAll('.scammer-wave rect');
       if (rects.length === 5) {
         rects.forEach((rect, i) => {
-           const value = dataArray[i * 4] || 0;
-           const scaleY = Math.max(0.1, value / 255);
-           rect.style.transform = `scaleY(${scaleY})`;
+          const value = dataArray[i * 4] || 0;
+          const scaleY = Math.max(0.1, value / 255);
+          rect.style.transform = `scaleY(${scaleY})`;
         });
       }
       animationFrameRef.current = requestAnimationFrame(draw);
@@ -86,12 +86,12 @@ const ScamHoneypot = () => {
     try {
       recognitionRef.current.start();
       setIsListening(true);
-      
+
       if (!audioContextRef.current) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioContextRef.current = new AudioContext();
         analyserRef.current = audioContextRef.current.createAnalyser();
-        analyserRef.current.fftSize = 64; 
+        analyserRef.current.fftSize = 64;
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
           micStreamRef.current = stream;
@@ -151,9 +151,9 @@ const ScamHoneypot = () => {
         setActivePersona(data.persona.toUpperCase());
       }
       if (data.voiceUsed) {
-        let finalVoice = typeof data.voiceUsed === 'string' 
-           ? data.voiceUsed 
-           : (data.voiceUsed.voice_id || data.voiceUsed.voiceId || "UNKNOWN");
+        let finalVoice = typeof data.voiceUsed === 'string'
+          ? data.voiceUsed
+          : (data.voiceUsed.voice_id || data.voiceUsed.voiceId || "UNKNOWN");
         setActiveVoice(finalVoice.toUpperCase());
       }
 
@@ -249,6 +249,42 @@ const ScamHoneypot = () => {
     setFallbackText('');
   };
 
+  const handleTerminateSession = async () => {
+    // Immediate override state to kill STT loop
+    setSessionPaused(true);
+    sessionPausedRef.current = true;
+    stopListening();
+    if (audioRef.current) audioRef.current.pause();
+    setIsSpeaking(false);
+    isProcessingRef.current = true;
+
+    try {
+      const res = await fetch('http://localhost:8000/api/voice-honeypot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          text: "[SYSTEM_OVERRIDE: MANUAL_TERMINATION]",
+          forceEnd: true
+        })
+      });
+
+      const data = await res.json();
+
+      // Play final exit message if returned, then refresh
+      if (data.audioUrl) {
+        const audio = new Audio(data.audioUrl);
+        audio.onended = () => window.location.reload();
+        audio.play();
+      } else {
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } catch (error) {
+      console.error("Termination error:", error);
+      window.location.reload();
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -313,10 +349,10 @@ const ScamHoneypot = () => {
     );
   }
 
-  // 2) Actual Layout Integration (Flex-constrained strictly to screen)
+
   return (
     <div className="h-screen w-screen bg-[#050505] text-[#E0E0E0] flex flex-col relative overflow-hidden selection:bg-[#CCFF00] selection:text-black">
-      {/* Custom Fonts & Brutalist CSS */}
+      {/* Custom Fonts CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:ital,wght@0,400;0,700;0,800;1,400&display=swap');
         
@@ -423,18 +459,26 @@ const ScamHoneypot = () => {
                 <div className="flex justify-between items-center mb-1">
                   <div className="text-[#666]">TARGET STATUS</div>
                   {sessionActive && (
-                    <button
-                      onClick={() => {
-                        const st = !sessionPaused;
-                        setSessionPaused(st);
-                        sessionPausedRef.current = st;
-                        if (st) stopListening();
-                        else startListening();
-                      }}
-                      className={`text-[9px] px-1.5 py-0.5 border transition-colors cursor-pointer ${sessionPaused ? 'bg-[#FF3300] text-black border-[#FF3300] hover:bg-white hover:border-white' : 'border-[#444] text-[#444] hover:bg-[#222]'}`}
-                    >
-                      {sessionPaused ? 'RESUME SESSION' : 'PAUSE SESSION'}
-                    </button>
+                    <div className="flex flex-col items-end gap-1 relative">
+                      <button
+                        onClick={() => {
+                          const st = !sessionPaused;
+                          setSessionPaused(st);
+                          sessionPausedRef.current = st;
+                          if (st) stopListening();
+                          else startListening();
+                        }}
+                        className={`text-[9px] px-1.5 py-0.5 border transition-colors cursor-pointer ${sessionPaused ? 'bg-[#FF3300] text-black border-[#FF3300] hover:bg-white hover:border-white' : 'border-[#444] text-[#444] hover:bg-[#222]'}`}
+                      >
+                        {sessionPaused ? 'RESUME SESSION' : 'PAUSE SESSION'}
+                      </button>
+                      <button
+                        onClick={handleTerminateSession}
+                        className="text-[8px] px-1.5 py-0.5 border border-[#FF3300] text-[#FF3300] opacity-50 hover:opacity-100 transition-opacity absolute top-6 right-0 whitespace-nowrap bg-[#050505] z-50 cursor-pointer"
+                      >
+                        [KILL_SESSION]
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -623,9 +667,9 @@ const ScamHoneypot = () => {
 
       {activePersona && (
         <div className="absolute bottom-4 right-4 lg:right-8 bg-[#111] border border-[#333] p-2 text-right z-50">
-            <div className="text-[9px] text-[#666] tracking-widest mb-1">ACTIVE_PERSONA</div>
-            <div className="text-xs text-[#CCFF00] font-bold">{activePersona}</div>
-            {activeVoice && <div className="text-[10px] text-[#888] mt-0.5">V_ID: {activeVoice}</div>}
+          <div className="text-[9px] text-[#666] tracking-widest mb-1">ACTIVE_PERSONA</div>
+          <div className="text-xs text-[#CCFF00] font-bold">{activePersona}</div>
+          {activeVoice && <div className="text-[10px] text-[#888] mt-0.5">V_ID: {activeVoice}</div>}
         </div>
       )}
 

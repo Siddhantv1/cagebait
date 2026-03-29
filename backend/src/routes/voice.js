@@ -113,7 +113,7 @@ router.post('/voice-honeypot', async (req, res) => {
         // 5. Check if should end based on PAST intelligence levels
         const endCheck = sessionManager.shouldEnd(session);
 
-        if (endCheck.should && !session.finalCallbackSent) {
+        if ((endCheck.should || req.body.forceEnd) && !session.finalCallbackSent) {
             session.finalCallbackSent = true;
             await sessionManager.saveSession(sessionId, session);
 
