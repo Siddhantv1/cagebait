@@ -49,8 +49,29 @@ class Agent {
         if (messageCount <= 15) return 'intelligence_extraction';
         return 'graceful_exit';
     }
+    
+    buildKnownFactsBlock(extractedIntelligence) {
+        if (!extractedIntelligence) return '';
+        const fieldLabels = {
+            bankAccounts:       'Bank Account',
+            upiIds:             'UPI ID',
+            phishingLinks:      'Phishing Link',
+            phoneNumbers:       'Phone Number',
+            suspiciousKeywords: 'Keyword',
+            scammerInfo:        'Scammer Info'
+        };
+        const lines = [];
+        Object.entries(fieldLabels).forEach(([key, label]) => {
+            const values = extractedIntelligence[key];
+            if (Array.isArray(values) && values.length > 0)
+                values.forEach(v => lines.push(`- ${label}: ${v}`));
+        });
+        if (lines.length === 0) return '';
+        return `\n=== INTEL ALREADY EXTRACTED (DO NOT ASK FOR THESE AGAIN) ===\n${lines.join('\n')}\n===========================================================`;
+    }
 
-    async generateResponse(scammerMessage, conversationHistory, persona, messageCount) {
+
+    async generateResponse(scammerMessage, conversationHistory, persona, messageCount, extractedIntelligence) {
         const personaInfo = this.personas[persona] || this.personas['elderly'];
         const phase = this.getPhase(messageCount);
 
@@ -63,14 +84,17 @@ class Agent {
         };
 
         const historyText = conversationHistory
-            .slice(-6)
-            .map(msg => `${msg.sender === 'scammer' ? 'Scammer' : 'You'}: ${msg.text}`)
-            .join('\n');
+        .map(msg => `${msg.sender === 'scammer' ? 'Scammer' : 'You'}: ${msg.text}`)
+        .join('\n');
 
-        const prompt = `You are roleplaying as a ${personaInfo.description}.
+    const knownFacts = this.buildKnownFactsBlock(extractedIntelligence);
+
+    const prompt = `You are roleplaying as a ${personaInfo.description}.
 Traits: ${personaInfo.traits}
+${knownFacts}
+MEMORY RULE: Before responding, check the INTEL block. If the scammer already gave a piece of info, acknowledge it and do NOT ask again. Focus only on what is still missing.
 
-Conversation so far:
+Full conversation history:
 ${historyText}
 
 Scammer just said: "${scammerMessage}"
@@ -89,11 +113,9 @@ Your response:`;
 
         try {
             const result = await this.model.generateContent(prompt);
-            const text = result.response.text();
-            return text.trim();
+            return result.response.text().trim();
         } catch (error) {
             console.error('Agent response failed:', error);
-            // Fallback response that solicits more info rather than confusion
             return "I'm worried about this. Can you tell me exactly what steps I need to take?";
         }
     }
