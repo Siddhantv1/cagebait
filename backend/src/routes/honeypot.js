@@ -16,6 +16,7 @@ const sessionManager = new SessionManager();
 router.post('/honeypot', async (req, res) => {
     try {
         const { sessionId, message, conversationHistory, metadata } = req.body;
+        const googleApiKey = req.headers['x-google-api-key'] || req.body.googleApiKey;
 
         // 1. Get or create session
         let session = await sessionManager.getSession(sessionId);
@@ -47,7 +48,7 @@ router.post('/honeypot', async (req, res) => {
         // 3. Detect scam (if not already detected)
         let detection = null;
         if (!session.scamDetected) {
-            detection = await scamDetector.detect(message.text);
+            detection = await scamDetector.detect(message.text, googleApiKey);
             console.log('Detection result:', detection);
 
             if (!detection.isScam) {
@@ -72,7 +73,7 @@ router.post('/honeypot', async (req, res) => {
         }
 
         // 4. Extract intelligence
-        const newIntel = intelligenceExtractor.extract(message.text);
+        const newIntel = await intelligenceExtractor.extract(message.text, googleApiKey);
         session.intelligence = intelligenceExtractor.merge(session.intelligence, newIntel);
 
         // Update last intelligence timestamp if new data found
@@ -118,7 +119,9 @@ router.post('/honeypot', async (req, res) => {
             message.text,
             session.conversationHistory, // Use session history (now synced)
             session.persona,
-            session.messageCount
+            session.messageCount,
+            session.intelligence,
+            googleApiKey
         );
 
         // 8. Add agent response to history

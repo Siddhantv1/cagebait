@@ -7,14 +7,21 @@ class IntelligenceExtractor {
         this.model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" }, { apiVersion: 'v1beta' });
     }
 
-    async extract(conversationMsgs) {
+    async extract(conversationMsgs, customGoogleKey = null) {
         if (!conversationMsgs || conversationMsgs.length === 0) {
             return this.getEmptyIntelligence();
         }
 
-        const convoText = conversationMsgs
-            .map(msg => `${msg.sender}: ${msg.text}`)
-            .join('\n');
+        let convoText = '';
+        if (typeof conversationMsgs === 'string') {
+            convoText = `scammer: ${conversationMsgs}`;
+        } else if (Array.isArray(conversationMsgs)) {
+            convoText = conversationMsgs
+                .map(msg => `${msg.sender}: ${msg.text}`)
+                .join('\n');
+        } else if (typeof conversationMsgs === 'object') {
+            convoText = `${conversationMsgs.sender || 'scammer'}: ${conversationMsgs.text}`;
+        }
 
         const prompt = `You are a cybersecurity intelligence extractor.
 Analyze this entire honeypot conversation. Extract any explicit personal or financial identifiers provided by the "scammer", even if spoken conversationally (e.g., "my account is four four three...").
@@ -33,7 +40,14 @@ Conversation:
 ${convoText}`;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const key = customGoogleKey || config.googleApiKey;
+            if (!key) {
+                throw new Error('Google API Key is not configured. Set it in backend/.env or configure custom key.');
+            }
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" }, { apiVersion: 'v1beta' });
+
+            const result = await model.generateContent(prompt);
             const text = result.response.text();
             // Parse JSON (remove markdown bounds safely)
             const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();

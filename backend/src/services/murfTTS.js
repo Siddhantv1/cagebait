@@ -49,11 +49,12 @@ class MurfTTS {
      * @param {object} [voiceOverride] - Optional pre-selected voice object
      * @returns {Promise<{ audioBuffer: Buffer, voiceUsed: object }>}
      */
-    async generateAudio(text, persona, voiceOverride = null) {
+    async generateAudio(text, persona, voiceOverride = null, customMurfKey = null) {
         const voice = voiceOverride || this.selectVoice(persona);
+        const activeKey = customMurfKey || this.apiKey;
 
-        if (!this.apiKey) {
-            throw new Error('MURF_API_KEY is not configured. Set it in backend/.env');
+        if (!activeKey) {
+            throw new Error('MURF_API_KEY is not configured. Set it in backend/.env or configure custom key.');
         }
 
         const requestBody = {
@@ -76,7 +77,7 @@ class MurfTTS {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'api-key': this.apiKey
+                    'api-key': activeKey
                 },
                 body: JSON.stringify(requestBody)
             });
@@ -119,8 +120,8 @@ class MurfTTS {
      * @param {object} [voiceOverride]
      * @returns {Promise<{ audioDataUri: string, voiceUsed: object }>}
      */
-    async generateAudioBase64(text, persona, voiceOverride = null) {
-        const { audioBuffer, voiceUsed } = await this.generateAudio(text, persona, voiceOverride);
+    async generateAudioBase64(text, persona, voiceOverride = null, customMurfKey = null) {
+        const { audioBuffer, voiceUsed } = await this.generateAudio(text, persona, voiceOverride, customMurfKey);
         const base64 = audioBuffer.toString('base64');
         const audioDataUri = `data:audio/mpeg;base64,${base64}`;
 

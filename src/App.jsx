@@ -11,6 +11,20 @@ const ScamHoneypot = () => {
   const [activePersona, setActivePersona] = useState(null);
   const [activeVoice, setActiveVoice] = useState(null);
   const [fallbackText, setFallbackText] = useState('');
+  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [murfApiKey, setMurfApiKey] = useState('');
+
+  const handleGoogleKeyChange = (e) => {
+    const val = e.target.value;
+    setGoogleApiKey(val);
+    localStorage.setItem('cagebait_google_api_key', val);
+  };
+
+  const handleMurfKeyChange = (e) => {
+    const val = e.target.value;
+    setMurfApiKey(val);
+    localStorage.setItem('cagebait_murf_api_key', val);
+  };
 
   const sessionIdRef = useRef('');
   const recognitionRef = useRef(null);
@@ -126,15 +140,21 @@ const ScamHoneypot = () => {
 
     const payload = {
       sessionId: sessionIdRef.current || 'SESSION_' + Date.now(),
-      text
+      text,
+      googleApiKey,
+      murfApiKey
     };
 
     isProcessingRef.current = true; // Block STT polling during fetch
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (googleApiKey) headers['x-google-api-key'] = googleApiKey;
+      if (murfApiKey) headers['x-murf-api-key'] = murfApiKey;
+
       const res = await fetch('http://localhost:8000/api/voice-honeypot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
       });
 
@@ -259,13 +279,19 @@ const ScamHoneypot = () => {
     isProcessingRef.current = true;
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (googleApiKey) headers['x-google-api-key'] = googleApiKey;
+      if (murfApiKey) headers['x-murf-api-key'] = murfApiKey;
+
       const res = await fetch('http://localhost:8000/api/voice-honeypot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
           text: "[SYSTEM_OVERRIDE: MANUAL_TERMINATION]",
-          forceEnd: true
+          forceEnd: true,
+          googleApiKey,
+          murfApiKey
         })
       });
 
@@ -286,6 +312,11 @@ const ScamHoneypot = () => {
   };
 
   useEffect(() => {
+    const savedGoogleKey = localStorage.getItem('cagebait_google_api_key');
+    const savedMurfKey = localStorage.getItem('cagebait_murf_api_key');
+    if (savedGoogleKey) setGoogleApiKey(savedGoogleKey);
+    if (savedMurfKey) setMurfApiKey(savedMurfKey);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (recognitionRef.current) recognitionRef.current.stop();
@@ -296,7 +327,7 @@ const ScamHoneypot = () => {
   // 1) Overlay Screen to accept Microphone permissions
   if (!sessionActive) {
     return (
-      <div className="h-screen w-screen bg-[#050505] flex flex-col items-center justify-center p-4 relative overflow-hidden text-[#E0E0E0]">
+      <div className="min-h-screen w-screen bg-[#050505] flex flex-col items-center justify-center py-8 px-4 relative overflow-y-auto text-[#E0E0E0]">
         <style>{`
                   @import url('https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:ital,wght@0,400;0,700;0,800;1,400&display=swap');
                   .font-display { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
@@ -336,6 +367,35 @@ const ScamHoneypot = () => {
               <li><span className="text-[#E0E0E0]">Automated intel scraping</span> (phones, bank accounts, links).</li>
             </ul>
             <p className="text-[10px] text-[#666] mt-4 border-t border-[#333] pt-4 leading-tight">By initiating protocol, you agree to grant microphone access for local voice transcription. Your audio connects via API.</p>
+          </div>
+
+          <div className="bg-[#111] border border-[#333] p-4 lg:p-6 text-left font-mono-data text-xs lg:text-sm space-y-4 hard-shadow-acid max-w-xl w-full mt-4">
+            <p className="font-bold text-[#CCFF00] tracking-widest text-[10px] lg:text-xs">/// API KEYS CONFIGURATION (LOCAL ONLY)</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[#888] mb-1 text-[10px] uppercase">Google API Key (Gemini)</label>
+                <input
+                  type="password"
+                  value={googleApiKey}
+                  onChange={handleGoogleKeyChange}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-[#1A1A1A] border border-[#333] text-[#E0E0E0] px-3 py-2 font-mono-data text-xs outline-none focus:border-[#CCFF00] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[#888] mb-1 text-[10px] uppercase">Murf API Key (TTS)</label>
+                <input
+                  type="password"
+                  value={murfApiKey}
+                  onChange={handleMurfKeyChange}
+                  placeholder="Enter Murf TTS API Key"
+                  className="w-full bg-[#1A1A1A] border border-[#333] text-[#E0E0E0] px-3 py-2 font-mono-data text-xs outline-none focus:border-[#CCFF00] transition-colors"
+                />
+              </div>
+              <p className="text-[9px] text-[#555] leading-tight">
+                Keys are stored locally in your browser's localStorage and passed in session requests. If left blank, the system will fall back to server-configured keys.
+              </p>
+            </div>
           </div>
 
           <button

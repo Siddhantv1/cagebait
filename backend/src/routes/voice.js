@@ -34,6 +34,8 @@ const murfTTS = new MurfTTS();
 router.post('/voice-honeypot', async (req, res) => {
     try {
         const { sessionId, text, conversationHistory } = req.body;
+        const googleApiKey = req.headers['x-google-api-key'] || req.body.googleApiKey;
+        const murfApiKey = req.headers['x-murf-api-key'] || req.body.murfApiKey;
 
         if (!sessionId || !text || !text.trim()) {
             return res.status(400).json({ error: 'sessionId and text are required' });
@@ -65,7 +67,7 @@ router.post('/voice-honeypot', async (req, res) => {
 
         // 3. Detect scam (if not already detected)
         if (!session.scamDetected) {
-            const detection = await scamDetector.detect(text);
+            const detection = await scamDetector.detect(text, googleApiKey);
             console.log('Voice endpoint detection result:', detection);
 
             if (!detection.isScam) {
@@ -77,7 +79,8 @@ router.post('/voice-honeypot', async (req, res) => {
                     audioResult = await murfTTS.generateAudioBase64(
                         nonScamText,
                         session.persona,
-                        session.murfVoice
+                        session.murfVoice,
+                        murfApiKey
                     );
                 } catch (ttsErr) {
                     console.error('TTS failed for non-scam response:', ttsErr.message);
@@ -125,7 +128,8 @@ router.post('/voice-honeypot', async (req, res) => {
                 audioResult = await murfTTS.generateAudioBase64(
                     exitMessage,
                     session.persona,
-                    session.murfVoice
+                    session.murfVoice,
+                    murfApiKey
                 );
             } catch (ttsErr) {
                 console.error('TTS failed for exit message:', ttsErr.message);
@@ -169,9 +173,11 @@ router.post('/voice-honeypot', async (req, res) => {
                 text,
                 session.conversationHistory,
                 session.persona,
-                session.messageCount
+                session.messageCount,
+                session.intelligence,
+                googleApiKey
             ),
-            intelligenceExtractor.extract(session.conversationHistory)
+            intelligenceExtractor.extract(session.conversationHistory, googleApiKey)
         ]);
 
         // Merge Concurrent Intel cleanly
@@ -197,7 +203,8 @@ router.post('/voice-honeypot', async (req, res) => {
             audioResult = await murfTTS.generateAudioBase64(
                 agentResponse,
                 session.persona,
-                session.murfVoice
+                session.murfVoice,
+                murfApiKey
             );
         } catch (ttsErr) {
             console.error('TTS failed for agent response:', ttsErr.message);

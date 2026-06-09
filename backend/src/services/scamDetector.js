@@ -97,7 +97,7 @@ class ScamDetector {
     }
 
     // Use Gemini to analyze
-    async analyzeWithGemini(message) {
+    async analyzeWithGemini(message, customGoogleKey = null) {
         const prompt = `Analyze this message for scam patterns: "${message}"
 
 Respond with JSON only (no markdown):
@@ -109,7 +109,16 @@ Respond with JSON only (no markdown):
 }`;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const key = customGoogleKey || config.googleApiKey;
+            if (!key) {
+                throw new Error('Google API Key is not configured. Set it in backend/.env or configure custom key.');
+            }
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-2.5-flash'
+            });
+
+            const result = await model.generateContent(prompt);
             const text = result.response.text();
             console.log('Gemini raw response:', text);
 
@@ -127,7 +136,7 @@ Respond with JSON only (no markdown):
         }
     }
 
-    async detect(message) {
+    async detect(message, customGoogleKey = null) {
         // Edge case: empty or whitespace-only message
         if (!message || !message.trim()) {
             return {
@@ -145,7 +154,7 @@ Respond with JSON only (no markdown):
         const keywordResult = this.checkKeywords(message);
 
         // Layer 2: Gemini analysis
-        const geminiResult = await this.analyzeWithGemini(message);
+        const geminiResult = await this.analyzeWithGemini(message, customGoogleKey);
 
         return {
             isScam: geminiResult.is_scam,

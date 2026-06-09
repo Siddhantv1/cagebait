@@ -71,7 +71,7 @@ class Agent {
     }
 
 
-    async generateResponse(scammerMessage, conversationHistory, persona, messageCount, extractedIntelligence) {
+    async generateResponse(scammerMessage, conversationHistory, persona, messageCount, extractedIntelligence, customGoogleKey = null) {
         const personaInfo = this.personas[persona] || this.personas['elderly'];
         const phase = this.getPhase(messageCount);
 
@@ -112,7 +112,13 @@ CRITICAL RULES:
 Your response:`;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const key = customGoogleKey || config.googleApiKey;
+            if (!key) {
+                throw new Error('Google API Key is not configured. Set it in backend/.env or configure custom key.');
+            }
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const result = await model.generateContent(prompt);
             return result.response.text().trim();
         } catch (error) {
             console.error('Agent response failed:', error);
