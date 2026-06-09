@@ -353,7 +353,7 @@ const ScamHoneypot = () => {
               CAGEBAIT
             </h1>
             <img
-              src="./imagebait.png" // put your image in /public
+              src="/imagebait.png" // put your image in /public
               alt="Cagebait logo"
               className="h-[3.5rem] md:h-[4.5rem] lg:h-[5.5rem] xl:h-[6.5rem] w-auto object-contain mb-5"
             />
@@ -505,7 +505,7 @@ const ScamHoneypot = () => {
                 CAGEBAIT
               </h1>
               {/* <img
-              src="./imagebait.png" // put your image in /public
+              src="/imagebait.png" // put your image in /public
               alt="Cagebait logo"
               className="h-11 w-auto object-contain lg:h-12 xl:h-14"
             /> */}
