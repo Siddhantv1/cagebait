@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 const ScamHoneypot = () => {
   const [sessionActive, setSessionActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false); // Murf TTS playing
@@ -154,7 +156,7 @@ const ScamHoneypot = () => {
       if (googleApiKey) headers['x-google-api-key'] = googleApiKey;
       if (murfApiKey) headers['x-murf-api-key'] = murfApiKey;
 
-      const res = await fetch('http://localhost:8000/api/voice-honeypot', {
+      const res = await fetch(`${API_BASE}/api/voice-honeypot`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload)
@@ -212,7 +214,7 @@ const ScamHoneypot = () => {
     setValidationError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/validate-keys', {
+      const res = await fetch(`${API_BASE}/api/validate-keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ googleApiKey, murfApiKey })
@@ -326,7 +328,7 @@ const ScamHoneypot = () => {
       if (googleApiKey) headers['x-google-api-key'] = googleApiKey;
       if (murfApiKey) headers['x-murf-api-key'] = murfApiKey;
 
-      const res = await fetch('http://localhost:8000/api/voice-honeypot', {
+      const res = await fetch(`${API_BASE}/api/voice-honeypot`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -454,11 +456,10 @@ const ScamHoneypot = () => {
           <button
             onClick={handleStartSession}
             disabled={!googleApiKey.trim() || !murfApiKey.trim()}
-            className={`mt-8 px-6 py-3 font-display text-xl md:text-2xl lg:text-3xl transition-all box-content hard-shadow-acid ${
-              (!googleApiKey.trim() || !murfApiKey.trim())
+            className={`mt-8 px-6 py-3 font-display text-xl md:text-2xl lg:text-3xl transition-all box-content hard-shadow-acid ${(!googleApiKey.trim() || !murfApiKey.trim())
                 ? "bg-[#222] text-[#555] cursor-not-allowed border-[#333] opacity-60 pointer-events-none"
                 : "bg-[#CCFF00] text-black hover:bg-white cursor-pointer"
-            }`}
+              }`}
           >
             🎙ALLOW MIC & INITIATE🎙
           </button>
