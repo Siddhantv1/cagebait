@@ -160,6 +160,8 @@ Navigate to `http://localhost:5173` in **Chrome** or **Edge**. Click **"🎤 ALL
 
 ## Usage
 
+Checkout the short Demo video here: https://youtu.be/vCDhM-YNEp8
+
 ### Voice Mode (Primary)
 
 1. Click **ALLOW MIC & INITIATE** on the briefing screen.

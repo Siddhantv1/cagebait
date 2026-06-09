@@ -1,5 +1,6 @@
 import express from 'express';
 import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config.js';
 import ScamDetector from '../services/scamDetector.js';
 import Agent from '../services/agent.js';
@@ -236,5 +237,60 @@ async function sendFinalCallback(sessionId, session, reason) {
         console.error('Callback failed:', error.message);
     }
 }
+
+router.post('/validate-keys', async (req, res) => {
+    const { googleApiKey, murfApiKey } = req.body;
+    const result = {
+        googleValid: false,
+        murfValid: false
+    };
+
+    // 1. Validate Google API Key
+    if (googleApiKey) {
+        try {
+            const genAI = new GoogleGenerativeAI(googleApiKey);
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            // Send a very minimal request to verify validity
+            await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: 'h' }] }]
+            });
+            result.googleValid = true;
+        } catch (err) {
+            console.error('Google API Key validation failed:', err.message);
+            // 503 means the model is overloaded — key IS valid, just busy. Treat as pass.
+            if (err.message && (err.message.includes('503') || err.message.includes('Service Unavailable'))) {
+                result.googleValid = true;
+            } else {
+                result.googleError = err.message;
+            }
+        }
+    }
+
+    // 2. Validate Murf API Key
+    // Note: The voices list endpoint must use api.murf.ai (global), NOT the region-prefixed URL.
+    // Region-prefixed URLs (e.g. in.api.murf.ai) are only for TTS streaming, not management endpoints.
+    if (murfApiKey) {
+        try {
+            const url = `https://api.murf.ai/v1/speech/voices?model=FALCON`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'api-key': murfApiKey
+                }
+            });
+            if (response.ok) {
+                result.murfValid = true;
+            } else {
+                const text = await response.text();
+                result.murfError = `API returned status ${response.status}: ${text}`;
+            }
+        } catch (err) {
+            console.error('Murf API Key validation failed:', err.message);
+            result.murfError = err.message;
+        }
+    }
+
+    res.json(result);
+});
 
 export default router;

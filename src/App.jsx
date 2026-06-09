@@ -13,6 +13,8 @@ const ScamHoneypot = () => {
   const [fallbackText, setFallbackText] = useState('');
   const [googleApiKey, setGoogleApiKey] = useState('');
   const [murfApiKey, setMurfApiKey] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   const handleGoogleKeyChange = (e) => {
     const val = e.target.value;
@@ -202,6 +204,47 @@ const ScamHoneypot = () => {
   };
 
   const handleStartSession = async () => {
+    if (!googleApiKey.trim() || !murfApiKey.trim()) {
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationError('');
+
+    try {
+      const res = await fetch('http://localhost:8000/api/validate-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ googleApiKey, murfApiKey })
+      });
+
+      if (!res.ok) {
+        throw new Error('Key validation failed on server');
+      }
+
+      const data = await res.json();
+      let errorMsg = '';
+      if (!data.googleValid) {
+        errorMsg += `Google API Key Error: ${data.googleError || 'Invalid Key'}. `;
+      }
+      if (!data.murfValid) {
+        errorMsg += `Murf API Key Error: ${data.murfError || 'Invalid Key'}. `;
+      }
+
+      if (errorMsg) {
+        setValidationError(errorMsg.trim());
+        setIsValidating(false);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      setValidationError('Failed to connect to backend for validation.');
+      setIsValidating(false);
+      return;
+    }
+
+    setIsValidating(false);
+
     try {
       // Explicitly request microphone access first
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -393,14 +436,29 @@ const ScamHoneypot = () => {
                 />
               </div>
               <p className="text-[9px] text-[#555] leading-tight">
-                Keys are stored locally in your browser's localStorage and passed in session requests. If left blank, the system will fall back to server-configured keys.
+                Keys are stored locally in your browser's localStorage and passed in session requests. Both keys are required to initiate the honeypot protocol.
               </p>
+              {isValidating && (
+                <div className="text-[#CCFF00] text-xs font-mono-data animate-pulse">
+                  Validating keys, please wait...
+                </div>
+              )}
+              {validationError && (
+                <div className="text-[#FF3300] text-xs font-mono-data border border-[#FF3300] p-2 bg-[#FF3300]/10 mt-2">
+                  ⚠️ {validationError}
+                </div>
+              )}
             </div>
           </div>
 
           <button
             onClick={handleStartSession}
-            className="mt-8 px-6 py-3 bg-[#CCFF00] text-black font-display text-xl md:text-2xl lg:text-3xl hover:bg-white transition-colors box-content hard-shadow-acid cursor-pointer"
+            disabled={!googleApiKey.trim() || !murfApiKey.trim()}
+            className={`mt-8 px-6 py-3 font-display text-xl md:text-2xl lg:text-3xl transition-all box-content hard-shadow-acid ${
+              (!googleApiKey.trim() || !murfApiKey.trim())
+                ? "bg-[#222] text-[#555] cursor-not-allowed border-[#333] opacity-60 pointer-events-none"
+                : "bg-[#CCFF00] text-black hover:bg-white cursor-pointer"
+            }`}
           >
             🎙ALLOW MIC & INITIATE🎙
           </button>
