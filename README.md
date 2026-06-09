@@ -164,11 +164,12 @@ Checkout the short Demo video here: https://youtu.be/vCDhM-YNEp8
 
 ### Voice Mode (Primary)
 
-1. Click **ALLOW MIC & INITIATE** on the briefing screen.
-2. Speak as if you are a scammer — the AI agent will respond with a synthesized voice.
-3. Watch the **CONVERSATION STREAM** panel for the live transcript.
-4. Watch the **DATA_EXTRACTION** panel on the right for scraped intelligence.
-5. Use the **PAUSE SESSION** button (top-left) to freeze the conversation without ending it.
+1. Input your Google Gemini and Murf AI API Keys for validation.
+2. Click **ALLOW MIC & INITIATE** on the briefing screen.
+3. Speak as if you are a scammer — the AI agent will respond with a synthesized voice.
+4. Watch the **CONVERSATION STREAM** panel for the live transcript. You can also use this panel to manually send text messages.
+5. Watch the **DATA_EXTRACTION** panel on the right for scraped intelligence.
+6. Use the **PAUSE SESSION** button (top-left) to freeze the conversation without ending it.
 
 ### Text Fallback
 
