@@ -1,7 +1,12 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import config from './config.js';
 import honeypotRouter from './routes/honeypot.js';
 import voiceRouter from './routes/voice.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -47,8 +52,19 @@ app.get('/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Serve Vite-built frontend in production
+// The dist folder is at ../../dist relative to backend/src/index.js
+const distPath = path.resolve(__dirname, '../../dist');
+app.use(express.static(distPath));
+
+// SPA catch-all: serve index.html for any non-API route
+app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
+
 // Start server
 app.listen(config.port, () => {
     console.log(`🚀 CageBait API running on port ${config.port}`);
-    console.log(`📍 Endpoint: http://localhost:${config.port}/api/honeypot`);
+    console.log(`📍 API: http://localhost:${config.port}/api/honeypot`);
+    console.log(`🌐 Frontend: http://localhost:${config.port}`);
 });
